@@ -23,6 +23,7 @@ namespace YellowImpactPitchIndication {
 		public static float[] steamParticleRot = { 45f, 45f, 180f };
 		public static float cdParticleOpacity = 0.75f;
 		public static Color cdParticleColor = new Color(0.3585f, 0.3585f, 0.3585f);
+		public static bool mutuallyExclusiveSteams = true;
 
 		private static ConfigDivision[] fallbackDiv = new ConfigDivision[3];
 		private static ConfigDivision steamAudioDiv = null;
@@ -76,6 +77,10 @@ namespace YellowImpactPitchIndication {
 			PitchFallbacks(config, greenHitsPanel, 0);
 			PitchFallbacks(config, yellowHitsPanel, 1);
 			PitchFallbacks(config, redHitsPanel, 2);
+
+			BoolSetting(config, steamPanel, "Disable on long cooldown", "mutuallyExclusiveSteams", ref mutuallyExclusiveSteams).onValueChange += (BoolField.BoolValueChangeEvent e) => {
+				mutuallyExclusiveSteams = e.value;
+			};
 
 			BoolSetting(config, steamPanel, "Enable Steam Audio", "steamAudio", ref steamAudio).onValueChange += (BoolField.BoolValueChangeEvent e) => {
 				steamAudio = e.value;

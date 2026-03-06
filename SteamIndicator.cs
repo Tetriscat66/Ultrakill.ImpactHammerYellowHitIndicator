@@ -31,12 +31,17 @@ namespace YellowImpactPitchIndication {
 			steamAud = yellowHitsParticleSystem.GetComponent<AudioSource>();
 		}
 
+		private void OnDisable() {
+			isPlaying = false;
+		}
+
 		private void Update() {
-			if((WeaponCharges.Instance.shoAltYellowsTimer <= 0f || hammer.overheated) && isPlaying) {
+			bool overheated = (PluginConfig.mutuallyExclusiveSteams ? hammer.overheated : false);
+			if((WeaponCharges.Instance.shoAltYellowsTimer <= 0f || overheated) && isPlaying) {
 				isPlaying = false;
 				steamAud.Stop();
 				steamParticle.Stop();
-			} else if(WeaponCharges.Instance.shoAltYellowsTimer > 0f && !hammer.overheated && !isPlaying) {
+			} else if(WeaponCharges.Instance.shoAltYellowsTimer > 0f && !overheated && !isPlaying) {
 				isPlaying = true;
 				if(PluginConfig.steamParticles) {
 					steamParticle.transform.localEulerAngles = new Vector3(PluginConfig.steamParticleRot[0], PluginConfig.steamParticleRot[1], PluginConfig.steamParticleRot[2]);

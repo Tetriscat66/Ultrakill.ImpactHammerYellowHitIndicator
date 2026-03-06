@@ -1,7 +1,7 @@
 {
 	"name": "ImpactHammerYellowHitIndicator",
 	"description": "Makes the Impact Hammer hit sound's pitch increase with the number of consecutive hits, and adds steam while the 3 second consecutive hit timer ticks down.",
-	"version_number": "1.0.0",
+	"version_number": "1.0.1",
 	"dependencies": [ "EternalsTeam-PluginConfigurator-1.10.2", "BepInEx-BepInExPack-5.4.2100" ],
 	"website_url": "https://github.com/Tetriscat66/Ultrakill.ImpactHammerYellowHitIndicator"
 }

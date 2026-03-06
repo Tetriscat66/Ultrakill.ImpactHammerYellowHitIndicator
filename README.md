@@ -7,6 +7,7 @@ Everything this mod does is configurable. The config options consist of:
 - The pitch and its variation of the hammer at 0, 1, 2, or 3+ yellow hits 
 - Whether yellow hits should use the pitch associated with after the current number of hits, rather than before 
 - Whether this pitch change applies to Green/Yellow/Red hits, and if not, the option to specify a pitch and its variationfor that specific hit color 
+- Whether the new steam should be able to be enabled while the regular cooldown steam is enabled 
 - Whether steam audio is enabled 
 - Whether steam particles are enabled 
 - The volume and pitch of steam audio 
