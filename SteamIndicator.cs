@@ -6,9 +6,9 @@ namespace YellowImpactPitchIndication {
 		private ShotgunHammer hammer;
 		private ParticleSystem steamParticle;
 		private AudioSource steamAud;
-		private bool isPlaying;
+		private int yellowsCount;
 		private void Start() {
-			isPlaying = false;
+			yellowsCount = -1;
 
 			hammer = GetComponent<ShotgunHammer>();
 
@@ -32,29 +32,38 @@ namespace YellowImpactPitchIndication {
 		}
 
 		private void OnDisable() {
-			isPlaying = false;
+			yellowsCount = -1;
 		}
 
 		private void Update() {
-			bool overheated = (PluginConfig.mutuallyExclusiveSteams ? hammer.overheated : false);
-			if((WeaponCharges.Instance.shoAltYellowsTimer <= 0f || overheated) && isPlaying) {
-				isPlaying = false;
+			if(PluginConfig.mutuallyExclusiveSteams[0] && hammer.overheated) {
+				steamAud.Stop();
+			}
+			if(PluginConfig.mutuallyExclusiveSteams[1] && hammer.overheated) {
+				steamParticle.Stop();
+			}
+			if(WeaponCharges.Instance.shoAltYellowsTimer <= 0f && yellowsCount != -1) {
+				yellowsCount = -1;
 				steamAud.Stop();
 				steamParticle.Stop();
-			} else if(WeaponCharges.Instance.shoAltYellowsTimer > 0f && !overheated && !isPlaying) {
-				isPlaying = true;
+			} else if(WeaponCharges.Instance.shoAltYellowsTimer > 0f && yellowsCount != WeaponCharges.Instance.shoAltYellows) {
+				yellowsCount = WeaponCharges.Instance.shoAltYellows;
 				if(PluginConfig.steamParticles) {
 					steamParticle.transform.localEulerAngles = new Vector3(PluginConfig.steamParticleRot[0], PluginConfig.steamParticleRot[1], PluginConfig.steamParticleRot[2]);
 					MainModule particleSettings = steamParticle.main;
 					particleSettings.startSpeedMultiplier = PluginConfig.particleSpeed;
 					MinMaxGradient startColor = particleSettings.startColor;
-					startColor.color = new Color(PluginConfig.particleColor.r, PluginConfig.particleColor.g, PluginConfig.particleColor.b, PluginConfig.particleOpacity);
+					startColor.color = new Color(PluginConfig.particleColor.r, PluginConfig.particleColor.g, PluginConfig.particleColor.b, PluginConfig.particleOpacity[WeaponCharges.Instance.shoAltYellows - 1]);
 					particleSettings.startColor = startColor;
+					EmissionModule emission = steamParticle.emission;
+					emission.rateOverTimeMultiplier = PluginConfig.particleRate[WeaponCharges.Instance.shoAltYellows - 1];
 					steamParticle.Play();
 				}
 				if(PluginConfig.steamAudio) {
-					steamAud.volume = PluginConfig.steamVolume;
-					steamAud.pitch = PluginConfig.steamPitch;
+					steamAud.volume = PluginConfig.steamVolume[yellowsCount - 1];
+					steamAud.pitch = PluginConfig.steamPitch[yellowsCount - 1];
+					if(steamAud.isPlaying)
+						steamAud.Stop();
 					steamAud.Play(true);
 				}
 			}

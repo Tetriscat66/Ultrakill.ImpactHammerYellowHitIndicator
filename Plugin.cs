@@ -1,4 +1,5 @@
-﻿using BepInEx;
+﻿using System;
+using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using PluginConfig.API;
@@ -73,6 +74,47 @@ public class Plugin : BaseUnityPlugin {
 			MinMaxGradient startColor = particleSettings.startColor;
 			startColor.color = new Color(PluginConfig.cdParticleColor.r, PluginConfig.cdParticleColor.g, PluginConfig.cdParticleColor.b, PluginConfig.cdParticleOpacity);
 			particleSettings.startColor = startColor;
+		}
+	}
+
+	[HarmonyPatch(typeof(ShotgunHammer), nameof(ShotgunHammer.LateUpdate))]
+	[HarmonyPrefix]
+	private static void GetMotorRotation(ShotgunHammer __instance, ref Quaternion __state) {
+		__state = __instance.motorPreviousRotation;
+	}
+
+	[HarmonyPatch(typeof(ShotgunHammer), nameof(ShotgunHammer.LateUpdate))]
+	[HarmonyPostfix]
+	private static void SetMotorRotation(ShotgunHammer __instance, Quaternion __state) {
+		if(PluginConfig.motorRotation == MotorRotationEnum.Movement_Speed_Only || (PluginConfig.motorRotation == MotorRotationEnum.Both_Speed_and_Time_Left && WeaponCharges.Instance.shoAltYellowsTimer <= 0f))
+			return;
+
+		__instance.rotatingMotor.localRotation = __state;
+
+		float time = Time.timeScale;
+
+		if(__instance.impactRoutine != null)
+			time = 1f;
+
+		float speed = WeaponCharges.Instance.shoAltYellowsTimer * PluginConfig.motorRotationMultiplier;
+		speed /= 3f; 
+
+		if(PluginConfig.motorRotation == MotorRotationEnum.Max_of_Speed_and_Time_Left && speed < __instance.currentSpeed) {
+			speed = __instance.currentSpeed;
+		}
+
+		__instance.rotatingMotor.Rotate(Vector3.up * speed * 10f * time * Time.unscaledDeltaTime * 150f, Space.Self);
+		__instance.motorPreviousRotation = __instance.rotatingMotor.localRotation;
+		__instance.motorSprite.color = new Color(1f, 1f, 1f, speed / 3f);
+
+		if(!PluginConfig.originalMotorSound) {
+			__instance.motorSound.volume = speed / 2f;
+
+			if(__instance.impactRoutine == null) {
+				__instance.motorSound.SetPitch(speed * time);
+			} else {
+				__instance.motorSound.SetPitch(__instance.tier + 1);
+			}
 		}
 	}
 }

@@ -11,6 +11,6 @@ Everything this mod does is configurable. The config options consist of:
 - Whether steam audio is enabled 
 - Whether steam particles are enabled 
 - The volume and pitch of steam audio 
-- The speed, color, opacity, and rotation of the steam particles 
+- The speed, color, opacity, amount, and rotation of the steam particles 
 - The color and opacity of the regular cooldown steam particles 
-
+- Whether the spinning motor shows the remaining cooldown time, and if it shouldn't overwrite its pitch/volume while doing so 

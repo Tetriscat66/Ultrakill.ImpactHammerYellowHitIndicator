@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using PluginConfig.API;
 using PluginConfig.API.Decorators;
@@ -16,18 +17,20 @@ namespace YellowImpactPitchIndication {
 		public static bool steamParticles = true;
 		public static bool steamAudio = true;
 		public static float particleSpeed = 30;
-		public static float particleOpacity = 0.75f;
+		public static float[] particleOpacity = { 0.75f, 0.75f, 0.75f };
 		public static Color particleColor = new Color(0.3585f, 0.3585f, 0.3585f);
-		public static float steamVolume = 0.45f;
-		public static float steamPitch = 1.1f;
+		public static float[] particleRate = { 125f, 250f, 375f };
+		public static float[] steamVolume = { 0.45f, 0.55f, 0.65f };
+		public static float[] steamPitch = { 1.1f, 1.1f, 1.1f };
 		public static float[] steamParticleRot = { 45f, 45f, 180f };
 		public static float cdParticleOpacity = 0.75f;
 		public static Color cdParticleColor = new Color(0.3585f, 0.3585f, 0.3585f);
-		public static bool mutuallyExclusiveSteams = true;
+		public static bool[] mutuallyExclusiveSteams = { true, true };
+		public static MotorRotationEnum motorRotation = MotorRotationEnum.Time_Left_Only;
+		public static float motorRotationMultiplier = 0.5f;
+		public static bool originalMotorSound = true;
 
 		private static ConfigDivision[] fallbackDiv = new ConfigDivision[3];
-		private static ConfigDivision steamAudioDiv = null;
-		private static ConfigDivision steamParticleDiv = null;
 
 		public static PluginConfigurator CreateConfig() {
 			PluginConfigurator config = PluginConfigurator.Create("Impact Hammer Hit Indicator Config", MyPluginInfo.PLUGIN_GUID);
@@ -35,6 +38,12 @@ namespace YellowImpactPitchIndication {
 			config.SetIconWithURL(Path.Combine($"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}", "icon.png"));
 
 			new ConfigSpace(config.rootPanel, 5.0f);
+
+			new ConfigHeader(config.rootPanel, "General");
+
+			ConfigDivision steamAudioDiv = null;
+			ConfigDivision steamParticleDiv = null;
+			ConfigDivision motorDiv = null;
 
 			ConfigPanel greenHitsPanel = new ConfigPanel(config.rootPanel, "Green Hits", "greenHitsPanel");
 			ConfigPanel yellowHitsPanel = new ConfigPanel(config.rootPanel, "Yellow Hits", "yellowHitsPanel");
@@ -47,6 +56,10 @@ namespace YellowImpactPitchIndication {
 			new ConfigSpace(redHitsPanel, 5.0f);
 			new ConfigSpace(steamPanel, 5.0f);
 			new ConfigSpace(extrasPanel, 5.0f);
+
+			new ConfigHeader(greenHitsPanel, "General");
+			new ConfigHeader(yellowHitsPanel, "General");
+			new ConfigHeader(redHitsPanel, "General");
 
 			BoolSetting(config, greenHitsPanel, "Applies to Green hits", "appliesToTier0", ref appliesToTier[0]).onValueChange += (BoolField.BoolValueChangeEvent e) => {
 				appliesToTier[0] = e.value;
@@ -67,7 +80,7 @@ namespace YellowImpactPitchIndication {
 				adjustInAdvance = e.value;
 			};
 
-			new ConfigSpace(config.rootPanel, 5.0f);
+			new ConfigHeader(config.rootPanel, "Rising Pitch");
 
 			PitchSettings(config, config.rootPanel, 0);
 			PitchSettings(config, config.rootPanel, 1);
@@ -78,9 +91,7 @@ namespace YellowImpactPitchIndication {
 			PitchFallbacks(config, yellowHitsPanel, 1);
 			PitchFallbacks(config, redHitsPanel, 2);
 
-			BoolSetting(config, steamPanel, "Disable on long cooldown", "mutuallyExclusiveSteams", ref mutuallyExclusiveSteams).onValueChange += (BoolField.BoolValueChangeEvent e) => {
-				mutuallyExclusiveSteams = e.value;
-			};
+			new ConfigHeader(steamPanel, "Steam Audio");
 
 			BoolSetting(config, steamPanel, "Enable Steam Audio", "steamAudio", ref steamAudio).onValueChange += (BoolField.BoolValueChangeEvent e) => {
 				steamAudio = e.value;
@@ -89,6 +100,12 @@ namespace YellowImpactPitchIndication {
 
 			steamAudioDiv = new ConfigDivision(steamPanel, "audioDiv");
 
+			BoolSetting(config, steamAudioDiv, "Disable audio on long cooldown", "mutuallyExclusiveSteams", ref mutuallyExclusiveSteams[0]).onValueChange += (BoolField.BoolValueChangeEvent e) => {
+				mutuallyExclusiveSteams[0] = e.value;
+			};
+
+			new ConfigHeader(steamPanel, "Steam Particles");
+
 			BoolSetting(config, steamPanel, "Enable Steam Particles", "steamParticles", ref steamParticles).onValueChange += (BoolField.BoolValueChangeEvent e) => {
 				steamParticles = e.value;
 				steamParticleDiv.interactable = e.value;
@@ -96,16 +113,40 @@ namespace YellowImpactPitchIndication {
 
 			steamParticleDiv = new ConfigDivision(steamPanel, "particleDiv");
 
+			BoolSetting(config, steamParticleDiv, "Disable particles on long cooldown", "mutuallyExclusiveSteams2", ref mutuallyExclusiveSteams[1]).onValueChange += (BoolField.BoolValueChangeEvent e) => {
+				mutuallyExclusiveSteams[1] = e.value;
+			};
+
 			FloatSetting(config, steamParticleDiv, "Particle Speed", "particleSpeed", ref particleSpeed).onValueChange += (FloatField.FloatValueChangeEvent e) => {
 				particleSpeed = e.value;
+			};
+
+			FloatSetting(config, steamParticleDiv, "Particle Rate -\n1 Yellow Hit", "particleRate1", ref particleRate[0]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				particleRate[0] = e.value;
+			};
+
+			FloatSetting(config, steamParticleDiv, "Particle Rate -\n2 Yellow Hits", "particleRate2", ref particleRate[1]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				particleRate[1] = e.value;
+			};
+
+			FloatSetting(config, steamParticleDiv, "Particle Rate -\n3+ Yellow Hits", "particleRate3", ref particleRate[2]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				particleRate[2] = e.value;
 			};
 
 			ColorSetting(config, steamParticleDiv, "Particle Color", "particleColor", ref particleColor).onValueChange += (ColorField.ColorValueChangeEvent e) => {
 				particleColor = e.value;
 			};
 
-			FloatSetting(config, steamParticleDiv, "Particle Opacity", "particleOpacity", ref particleOpacity).onValueChange += (FloatField.FloatValueChangeEvent e) => {
-				particleOpacity = e.value;
+			FloatSetting(config, steamParticleDiv, "Particle Opacity -\n1 Yellow Hit", "particleOpacity1", ref particleOpacity[0]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				particleOpacity[0] = e.value;
+			};
+
+			FloatSetting(config, steamParticleDiv, "Particle Opacity -\n2 Yellow Hits", "particleOpacity2", ref particleOpacity[1]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				particleOpacity[1] = e.value;
+			};
+
+			FloatSetting(config, steamParticleDiv, "Particle Opacity -\n3+ Yellow Hits", "particleOpacity3", ref particleOpacity[2]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				particleOpacity[2] = e.value;
 			};
 
 			FloatSetting(config, steamParticleDiv, "Particle Rotation X", "particleRotX", ref steamParticleRot[0]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
@@ -120,19 +161,54 @@ namespace YellowImpactPitchIndication {
 				steamParticleRot[2] = e.value;
 			};
 
-			FloatSetting(config, steamAudioDiv, "Steam Volume", "steamVolume", ref steamVolume).onValueChange += (FloatField.FloatValueChangeEvent e) => {
-				steamVolume = e.value;
+			FloatSetting(config, steamAudioDiv, "Steam Volume -\n1 Yellow Hit", $"steamVolume1", ref steamVolume[0]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				steamVolume[0] = e.value;
 			};
 
-			FloatSetting(config, steamAudioDiv, "Steam Pitch", "steamPitch", ref steamPitch).onValueChange += (FloatField.FloatValueChangeEvent e) => {
-				steamPitch = e.value;
+			FloatSetting(config, steamAudioDiv, "Steam Pitch -\n1 Yellow Hit", $"steamPitch1", ref steamPitch[0]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				steamPitch[0] = e.value;
 			};
 
-			ColorSetting(config, extrasPanel, "Cooldown Particle Color", "cdParticleColor", ref cdParticleColor).onValueChange += (ColorField.ColorValueChangeEvent e) => {
+			FloatSetting(config, steamAudioDiv, "Steam Volume -\n2 Yellow Hits", $"steamVolume2", ref steamVolume[1]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				steamVolume[1] = e.value;
+			};
+
+			FloatSetting(config, steamAudioDiv, "Steam Pitch -\n2 Yellow Hits", $"steamPitch2", ref steamPitch[1]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				steamPitch[1] = e.value;
+			};
+
+			FloatSetting(config, steamAudioDiv, "Steam Volume -\n3+ Yellow Hits", $"steamVolume3", ref steamVolume[2]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				steamVolume[2] = e.value;
+			};
+			
+			FloatSetting(config, steamAudioDiv, "Steam Pitch -\n3+ Yellow Hits", $"steamPitch3", ref steamPitch[2]).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				steamPitch[2] = e.value;
+			};
+
+			new ConfigHeader(extrasPanel, "Spinning Motor");
+
+			EnumSetting<MotorRotationEnum>(config, extrasPanel, "Motor Rotation", "motorRotation", ref motorRotation).onValueChange += (EnumField<MotorRotationEnum>.EnumValueChangeEvent e) => {
+				motorRotation = e.value;
+				motorDiv.interactable = e.value != MotorRotationEnum.Movement_Speed_Only;
+			};
+
+			motorDiv = new ConfigDivision(extrasPanel, "motorDiv");
+
+			FloatSetting(config, motorDiv, "Motor Rotation Multiplier", "motorRotationMultiplier", ref motorRotationMultiplier).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+				motorRotationMultiplier = e.value;
+			};
+
+			BoolSetting(config, motorDiv, "Use Original Sound Volume", "originalMotorSound", ref originalMotorSound).onValueChange += (BoolField.BoolValueChangeEvent e) => {
+				originalMotorSound = e.value;
+			};
+
+			new ConfigHeader(extrasPanel, "Long Cooldown Steam Particles");
+
+			ColorSetting(config, extrasPanel, "Long Cooldown Particle Color", "cdParticleColor", ref cdParticleColor).onValueChange += (ColorField.ColorValueChangeEvent e) => {
 				cdParticleColor = e.value;
 			};
 
-			FloatSetting(config, extrasPanel, "Cooldown Particle Opacity", "cdParticleOpacity", ref cdParticleOpacity).onValueChange += (FloatField.FloatValueChangeEvent e) => {
+			FloatSetting(config, extrasPanel, "Long Cooldown Particle Opacity", "cdParticleOpacity", ref cdParticleOpacity).onValueChange += (FloatField.FloatValueChangeEvent e) => {
 				cdParticleOpacity = e.value;
 			};
 
@@ -175,6 +251,15 @@ namespace YellowImpactPitchIndication {
 		public static ColorField ColorSetting(PluginConfigurator config, ConfigPanel panel, string name, string guid, ref Color value) {
 			ColorField field = new ColorField(panel, name, guid, value);
 			value = field.value;
+			return field;
+		}
+
+		public static EnumField<T> EnumSetting<T>(PluginConfigurator config, ConfigPanel panel, string name, string guid, ref T value) where T : struct {
+			EnumField<T> field = new EnumField<T>(panel, name, guid, value);
+			value = field.value;
+			foreach(T enumValue in Enum.GetValues(typeof(T)) as T[]) {
+				field.SetEnumDisplayName(enumValue, enumValue.ToString().Replace('_', ' '));
+			}
 			return field;
 		}
 	}
