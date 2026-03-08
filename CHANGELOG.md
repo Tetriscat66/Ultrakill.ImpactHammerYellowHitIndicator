@@ -1,5 +1,8 @@
 # Changelog 
 
+## v1.0.3 
+- Fixed a bug where steam audio and particles wouldn't enable when 4+ yellow hits were hit in a row 
+
 ## v1.0.2
 - Added an option to make the motor's rotation show yellow hit cooldown time 
 - Split pitch, volume, and opacity options for yellow hit cooldown steam by yellow hit count 

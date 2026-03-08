@@ -48,15 +48,17 @@ namespace YellowImpactPitchIndication {
 				steamParticle.Stop();
 			} else if(WeaponCharges.Instance.shoAltYellowsTimer > 0f && yellowsCount != WeaponCharges.Instance.shoAltYellows) {
 				yellowsCount = WeaponCharges.Instance.shoAltYellows;
+				if(yellowsCount > 3)
+					yellowsCount = 3;
 				if(PluginConfig.steamParticles) {
 					steamParticle.transform.localEulerAngles = new Vector3(PluginConfig.steamParticleRot[0], PluginConfig.steamParticleRot[1], PluginConfig.steamParticleRot[2]);
 					MainModule particleSettings = steamParticle.main;
 					particleSettings.startSpeedMultiplier = PluginConfig.particleSpeed;
 					MinMaxGradient startColor = particleSettings.startColor;
-					startColor.color = new Color(PluginConfig.particleColor.r, PluginConfig.particleColor.g, PluginConfig.particleColor.b, PluginConfig.particleOpacity[WeaponCharges.Instance.shoAltYellows - 1]);
+					startColor.color = new Color(PluginConfig.particleColor.r, PluginConfig.particleColor.g, PluginConfig.particleColor.b, PluginConfig.particleOpacity[yellowsCount - 1]);
 					particleSettings.startColor = startColor;
 					EmissionModule emission = steamParticle.emission;
-					emission.rateOverTimeMultiplier = PluginConfig.particleRate[WeaponCharges.Instance.shoAltYellows - 1];
+					emission.rateOverTimeMultiplier = PluginConfig.particleRate[yellowsCount - 1];
 					steamParticle.Play();
 				}
 				if(PluginConfig.steamAudio) {
@@ -66,6 +68,7 @@ namespace YellowImpactPitchIndication {
 						steamAud.Stop();
 					steamAud.Play(true);
 				}
+				yellowsCount = WeaponCharges.Instance.shoAltYellows;
 			}
 		}
 	}
